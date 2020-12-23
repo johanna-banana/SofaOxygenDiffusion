@@ -19,7 +19,11 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#include "boost/shared_ptr.hpp"
+#include "mex.h"
+#include "class_handle.hpp"
+#include "SofaOxygenDiffusion.h"
+
+
 #include <sofa/defaulttype/VecTypes.h>
 
 #include <SofaGraphComponent/Gravity.h>
@@ -28,7 +32,7 @@
 #include <SofaBaseMechanics/UniformMass.h>
 #include <SofaBoundaryCondition/ConstantForceField.h>
 #include <SofaBoundaryCondition/FixedConstraint.h>
-#include <SofaSimpleFem/TetrahedronDiffusionFEMForceField.h>
+//#include <SofaSimpleFem/TetrahedronDiffusionFEMForceField.h>
  //solvers
 #include <SofaBaseLinearSolver/CGLinearSolver.h>
 
@@ -69,7 +73,7 @@ using sofa::core::objectmodel::New;
 
 using sofa::component::projectiveconstraintset::FixedConstraint;
 
-int main(int argc, char** argv)
+void SofaOxygenDiffusion::init_simulation()
 {
 //    glutInit(&argc,argv);
     sofa::simulation::tree::init();
@@ -84,10 +88,10 @@ int main(int argc, char** argv)
 //    sofa::gui::GUIManager::Init(argv[0]);
 //
 //    // The graph root node : gravity already exists in a GNode by default
-    GNode::SPtr groot = New<GNode>();
-    groot->setName( "root" );
-    groot->setGravity( Vec3dTypes::Coord(0,0,0) );
-    groot->setDt(0.02);
+    m_root_node = New<GNode>();
+    m_root_node->setName( "root" );
+    m_root_node->setGravity( Vec3dTypes::Coord(0,0,0) );
+    m_root_node->setDt(0.02);
 
     /*
      * Sub nodes: DRE
@@ -115,14 +119,14 @@ int main(int argc, char** argv)
     mechanicalObject->setScale(1,1,1);
 
     // diffusion forcefield
-    typedef sofa::component::forcefield::TetrahedronDiffusionFEMForceField<Vec3dTypes> TetraDiffFEM;
-    TetraDiffFEM::SPtr tetra_diffusion_fem = New<TetraDiffFEM>();
-    tetra_diffusion_fem->setName("diffusion_fem");
-    tetra_diffusion_fem->setDiffusionCoefficient(0.6);
+//    typedef sofa::component::forcefield::TetrahedronDiffusionFEMForceField<Vec3dTypes> TetraDiffFEM;
+//    TetraDiffFEM::SPtr tetra_diffusion_fem = New<TetraDiffFEM>();
+//    tetra_diffusion_fem->setName("diffusion_fem");
+//    tetra_diffusion_fem->setDiffusionCoefficient(0.6);
 
 //    // fixed constraint
-//    typedef FixedConstraint< StdVectorTypes<Vec<3,double>,Vec<3,double>,double> > FixedConstraint3d;
-//    FixedConstraint3d::SPtr fixedConstraints = New<FixedConstraint3d>();
+    typedef FixedConstraint< StdVectorTypes<Vec<3,double>,Vec<3,double>,double> > FixedConstraint3d;
+    FixedConstraint3d::SPtr fixedConstraints = New<FixedConstraint3d>();
 //    fixedConstraints->setName("Box Constraints");
 //    fixedConstraints->addConstraint(0);
 //    fixedConstraints->addConstraint(1); fixedConstraints->addConstraint(2); fixedConstraints->addConstraint(6); fixedConstraints->addConstraint(12); fixedConstraints->addConstraint(17); fixedConstraints->addConstraint(21); fixedConstraints->addConstraint(22);
@@ -134,20 +138,24 @@ int main(int argc, char** argv)
 //    fixedConstraints->addConstraint(158); fixedConstraints->addConstraint(159); fixedConstraints->addConstraint(160); fixedConstraints->addConstraint(164); fixedConstraints->addConstraint(170); fixedConstraints->addConstraint(175); fixedConstraints->addConstraint(180); fixedConstraints->addConstraint(181);
 //    fixedConstraints->addConstraint(184); fixedConstraints->addConstraint(185); fixedConstraints->addConstraint(186); fixedConstraints->addConstraint(190); fixedConstraints->addConstraint(196); fixedConstraints->addConstraint(201); fixedConstraints->addConstraint(206); fixedConstraints->addConstraint(205);
 
-    groot->addChild(dreNode);
+    m_root_node->addChild(dreNode);
 
     // Init the scene
-    sofa::simulation::tree::getSimulation()->init(groot.get());
-
+    sofa::simulation::tree::getSimulation()->init(m_root_node.get());
+    m_simulation = getSimulation();
 //    //=======================================
 //    // Run the main loop
 //    sofa::gui::GUIManager::MainLoop(groot);
+
+//
+//    sofa::simulation::tree::cleanup();
+}
+
+void SofaOxygenDiffusion::run_simulation()
+{
     for(uint16_t i = 0; i<5;i++)
     {
-        getSimulation()->animate(groot.get());
+        m_simulation->animate(m_root_node.get());
         std::cout << std::to_string(i) << std::endl;
     }
-//
-    sofa::simulation::tree::cleanup();
-    return 0;
 }
