@@ -1,154 +1,137 @@
-/******************************************************************************
-*                 SOFA, Simulation Open-Framework Architecture                *
-*                    (c) 2006 INRIA, USTL, UJF, CNRS, MGH                     *
-*                                                                             *
-* This program is free software; you can redistribute it and/or modify it     *
-* under the terms of the GNU General Public License as published by the Free  *
-* Software Foundation; either version 2 of the License, or (at your option)   *
-* any later version.                                                          *
-*                                                                             *
-* This program is distributed in the hope that it will be useful, but WITHOUT *
-* ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or       *
-* FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for    *
-* more details.                                                               *
-*                                                                             *
-* You should have received a copy of the GNU General Public License along     *
-* with this program. If not, see <http://www.gnu.org/licenses/>.              *
-*******************************************************************************
-* Authors: The SOFA Team and external contributors (see Authors.txt)          *
-*                                                                             *
-* Contact information: contact@sofa-framework.org                             *
-******************************************************************************/
-#include "mex.h"
-#include "class_handle.hpp"
-#include "SofaOxygenDiffusion.h"
 
+#include "SofaOxygenDiffusion.h"
 
 #include <sofa/defaulttype/VecTypes.h>
 
-#include <SofaGraphComponent/Gravity.h>
-//#include <SofaLoader/MeshGmshLoader.h>
+#include <SofaGeneralLoader/MeshGmshLoader.h>
+using GmshLoader = sofa::component::loader::MeshGmshLoader;
+
+#include <SofaBaseTopology/MeshTopology.h>
+#include <SofaBaseTopology/TetrahedronSetTopologyContainer.h>
+using TetraMeshTopology = sofa::component::topology::TetrahedronSetTopologyContainer;
+#include <SofaBaseTopology/TetrahedronSetGeometryAlgorithms.h>
+using TetraGeoAlgorithm = sofa::component::topology::TetrahedronSetGeometryAlgorithms<sofa::defaulttype::Vec3dTypes>;
+
 #include <SofaBaseMechanics/MechanicalObject.h>
-#include <SofaBaseMechanics/UniformMass.h>
 #include <SofaBoundaryCondition/ConstantForceField.h>
 #include <SofaBoundaryCondition/FixedConstraint.h>
-//#include <SofaSimpleFem/TetrahedronDiffusionFEMForceField.h>
- //solvers
+#include <SofaSimpleFem/TetrahedronDiffusionFEMForceField.h>
+
+//solvers
 #include <SofaBaseLinearSolver/CGLinearSolver.h>
+using CGLinearSolver = sofa::component::linearsolver::CGLinearSolver<sofa::component::linearsolver::GraphScatteredMatrix, sofa::component::linearsolver::GraphScatteredVector>;
+#include <SofaImplicitOdeSolver/EulerImplicitSolver.h>
+using EulerImplicitSolver = sofa::component::odesolver::EulerImplicitSolver;
 
 #include <sofa/core/objectmodel/Context.h>
 #include <sofa/helper/system/FileRepository.h>
+using sofa::helper::system::DataRepository;
 
-#include <SofaSimulationTree/init.h>
-#include <SofaSimulationTree/GNode.h>
-#include <SofaSimulationTree/TreeSimulation.h>
+#include <SofaSimulationGraph/SimpleApi.h>
+#include <SofaSimulationGraph/DAGNode.h>
+#include <SofaSimulation/initSofaSimulation.h>
+#include <SofaSimulationGraph/init.h>
+#include <SofaSimulationCommon/init.h>
+using DAGNode = sofa::simulation::graph::DAGNode;
+using sofa::simulation::Node;
 
 #include <iostream>
-#include <fstream>
-
 #include <SofaBase/initSofaBase.h>
-
-using namespace sofa::simulation::tree;
-using namespace sofa::defaulttype;
-
-using sofa::simulation::Node;
-using sofa::helper::system::DataRepository;
-#include <sofa/helper/system/FileSystem.h>
-using sofa::helper::system::FileSystem;
-
-using sofa::component::linearsolver::CGLinearSolver;
-using sofa::component::linearsolver::GraphScatteredMatrix;
-using sofa::component::linearsolver::GraphScatteredVector;
 
 // mechanical object
 using sofa::component::container::MechanicalObject;
 using sofa::defaulttype::StdVectorTypes;
+using vec1d = sofa::defaulttype::Vec1dTypes;
 using sofa::defaulttype::Vec;
-//using sofa::core::loader::MeshLoader;
 
-using sofa::core::Mapping;
 using sofa::core::behavior::MechanicalState;
 using sofa::core::State;
 using sofa::core::objectmodel::New;
 
 using sofa::component::projectiveconstraintset::FixedConstraint;
+using Tag = sofa::core::objectmodel::Tag;
+using Data = sofa::core::objectmodel::Data<std::string>;
 
 void SofaOxygenDiffusion::init_simulation()
 {
-//    glutInit(&argc,argv);
-    sofa::simulation::tree::init();
     sofa::component::initSofaBase();
-//    sofa::component::initSofaCommon();
-//    sofa::component::initSofaGeneral();
-//    sofa::component::initSofaMisc();
-//    sofa::helper::parse("This is a SOFA application.")
-//            (argc,argv);
-//    sofa::component::init();
-//    sofa::gui::initMain();
-//    sofa::gui::GUIManager::Init(argv[0]);
-//
-//    // The graph root node : gravity already exists in a GNode by default
-    m_root_node = New<GNode>();
+    sofa::initSofaSimulation();
+//    sofa::simulation::graph::init();
+
+    m_simulation = sofa::simpleapi::createSimulation();
+    m_root_node = sofa::simpleapi::createRootNode(m_simulation, "root");
     m_root_node->setName( "root" );
-    m_root_node->setGravity( Vec3dTypes::Coord(0,0,0) );
+    m_root_node->setGravity( sofa::defaulttype::Vec3dTypes::Coord(0,0,0) );
     m_root_node->setDt(0.02);
 
-    /*
-     * Sub nodes: DRE
-     */
-    GNode::SPtr dreNode = New<GNode>();
-    dreNode->setName("DRE");
-
-
-    GNode::SPtr cylNode = New<GNode>();
-    cylNode->setName("Cylinder");
-
     // solvers
-    typedef CGLinearSolver<GraphScatteredMatrix, GraphScatteredVector> CGLinearSolverGraph;
-    CGLinearSolverGraph::SPtr cgLinearSolver = New<CGLinearSolverGraph>();
-    cgLinearSolver->setName("cgLinearSolver");
-    cgLinearSolver->f_maxIter.setValue(25);
-    cgLinearSolver->f_tolerance.setValue(1.0e-9);
-    cgLinearSolver->f_smallDenominatorThreshold.setValue(1.0e-9);
+    EulerImplicitSolver::SPtr eulerSolver = New<EulerImplicitSolver>();
+    eulerSolver->setName("eulerSolver");
+    eulerSolver->f_rayleighStiffness.setValue(0.1);
+    eulerSolver->f_rayleighMass.setValue(0.1);
+    eulerSolver->f_firstOrder.setValue(true);
+   // <CGLinearSolver name="CG" iterations="1000" tolerance="1.0e-10" threshold="1.0e-30" tags="heat"/>
+    CGLinearSolver::SPtr linearSolver = New<CGLinearSolver>();
+    linearSolver->setName("linearSolver");
+    linearSolver->f_maxIter.setValue(1000);
+    linearSolver->f_tolerance.setValue(1.0e-10);
 
-    // mechanical object
-    typedef MechanicalObject< Vec3dTypes > MechanicalObject3d;
+    // Model
+    GmshLoader::SPtr mesh = New<GmshLoader>();
+    mesh->setFilename("box.msh");
+    mesh->doLoad();
+
+    // Topology
+    TetraMeshTopology::SPtr topology = New<TetraMeshTopology>();
+    topology->setSrc("", mesh.get());
+    std::cout << "tetrahedra:" << topology->getNumberOfTetrahedra() << std::endl;
+    std::cout << "nodes:" << mesh->d_positions.getValue().size() << std::endl;
+    TetraGeoAlgorithm::SPtr geoAlgo = New<TetraGeoAlgorithm>();
+    topology->addTag(Tag("mechanics"));
+    geoAlgo->addTag(Tag("mechanics"));
+
+    // mechanical object - positions
+    typedef MechanicalObject< sofa::defaulttype::Vec3dTypes > MechanicalObject3d;
     MechanicalObject3d::SPtr mechanicalObject = New<MechanicalObject3d>();
+    mechanicalObject->setSrc("", mesh.get());
+    mechanicalObject->setName("node_positions");
     mechanicalObject->setTranslation(0,0,0);
     mechanicalObject->setRotation(0,0,0);
     mechanicalObject->setScale(1,1,1);
+    mechanicalObject->addTag(Tag("mechanics"));
+
+    // mechanical object - oxygen levels
+    typedef MechanicalObject<vec1d> MechanicalObject1d;
+    MechanicalObject1d::SPtr oxygen = New<MechanicalObject1d>();
+    oxygen->resize(mesh->d_positions.getValue().size());
+    oxygen->setName("oxygen_levels");
+    oxygen->addTag(Tag("oxygen"));
 
     // diffusion forcefield
-//    typedef sofa::component::forcefield::TetrahedronDiffusionFEMForceField<Vec3dTypes> TetraDiffFEM;
-//    TetraDiffFEM::SPtr tetra_diffusion_fem = New<TetraDiffFEM>();
-//    tetra_diffusion_fem->setName("diffusion_fem");
-//    tetra_diffusion_fem->setDiffusionCoefficient(0.6);
+    typedef sofa::component::forcefield::TetrahedronDiffusionFEMForceField<sofa::defaulttype::Vec1dTypes> TetraDiffFEM;
+    TetraDiffFEM::SPtr tetra_diffusion_fem = New<TetraDiffFEM>();
+    tetra_diffusion_fem->setName("diffusion_fem");
+    tetra_diffusion_fem->l_topology = topology;
+    tetra_diffusion_fem->addTag(Tag("oxygen"));
+    tetra_diffusion_fem->d_tagMeshMechanics.setValue("mechanics");
 
-//    // fixed constraint
-    typedef FixedConstraint< StdVectorTypes<Vec<3,double>,Vec<3,double>,double> > FixedConstraint3d;
-    FixedConstraint3d::SPtr fixedConstraints = New<FixedConstraint3d>();
-//    fixedConstraints->setName("Box Constraints");
-//    fixedConstraints->addConstraint(0);
-//    fixedConstraints->addConstraint(1); fixedConstraints->addConstraint(2); fixedConstraints->addConstraint(6); fixedConstraints->addConstraint(12); fixedConstraints->addConstraint(17); fixedConstraints->addConstraint(21); fixedConstraints->addConstraint(22);
-//    fixedConstraints->addConstraint(24); fixedConstraints->addConstraint(25); fixedConstraints->addConstraint(26); fixedConstraints->addConstraint(30); fixedConstraints->addConstraint(36); fixedConstraints->addConstraint(41); fixedConstraints->addConstraint(46); fixedConstraints->addConstraint(47);
-//    fixedConstraints->addConstraint(50); fixedConstraints->addConstraint(51); fixedConstraints->addConstraint(52); fixedConstraints->addConstraint(56); fixedConstraints->addConstraint(62); fixedConstraints->addConstraint(68); fixedConstraints->addConstraint(73); fixedConstraints->addConstraint(74);
-//    fixedConstraints->addConstraint(77); fixedConstraints->addConstraint(78); fixedConstraints->addConstraint(79); fixedConstraints->addConstraint(83); fixedConstraints->addConstraint(89); fixedConstraints->addConstraint(95); fixedConstraints->addConstraint(100); fixedConstraints->addConstraint(101);
-//    fixedConstraints->addConstraint(104); fixedConstraints->addConstraint(105); fixedConstraints->addConstraint(106); fixedConstraints->addConstraint(110); fixedConstraints->addConstraint(116); fixedConstraints->addConstraint(122); fixedConstraints->addConstraint(127); fixedConstraints->addConstraint(128);
-//    fixedConstraints->addConstraint(131); fixedConstraints->addConstraint(132); fixedConstraints->addConstraint(133); fixedConstraints->addConstraint(137); fixedConstraints->addConstraint(143); fixedConstraints->addConstraint(149); fixedConstraints->addConstraint(154); fixedConstraints->addConstraint(155);
-//    fixedConstraints->addConstraint(158); fixedConstraints->addConstraint(159); fixedConstraints->addConstraint(160); fixedConstraints->addConstraint(164); fixedConstraints->addConstraint(170); fixedConstraints->addConstraint(175); fixedConstraints->addConstraint(180); fixedConstraints->addConstraint(181);
-//    fixedConstraints->addConstraint(184); fixedConstraints->addConstraint(185); fixedConstraints->addConstraint(186); fixedConstraints->addConstraint(190); fixedConstraints->addConstraint(196); fixedConstraints->addConstraint(201); fixedConstraints->addConstraint(206); fixedConstraints->addConstraint(205);
-
-    m_root_node->addChild(dreNode);
+    m_root_node->addObject(eulerSolver);
+    m_root_node->addObject(linearSolver);
+    m_root_node->addObject(mechanicalObject);
+    m_root_node->addObject(oxygen);
+    m_root_node->addObject(mesh);
+    m_root_node->addObject(topology);
+    m_root_node->addObject(geoAlgo);
+    m_root_node->addObject(tetra_diffusion_fem);
 
     // Init the scene
-    sofa::simulation::tree::getSimulation()->init(m_root_node.get());
-    m_simulation = getSimulation();
-//    //=======================================
-//    // Run the main loop
-//    sofa::gui::GUIManager::MainLoop(groot);
+    m_simulation->init(m_root_node.get());
+}
 
-//
-//    sofa::simulation::tree::cleanup();
+SofaOxygenDiffusion::~SofaOxygenDiffusion()
+{
+    sofa::simulation::graph::cleanup();
+    sofa::simulation::common::cleanup();
 }
 
 void SofaOxygenDiffusion::run_simulation()
@@ -156,6 +139,6 @@ void SofaOxygenDiffusion::run_simulation()
     for(uint16_t i = 0; i<5;i++)
     {
         m_simulation->animate(m_root_node.get());
-        std::cout << std::to_string(i) << std::endl;
+        std::cout << "Time: " << m_root_node->getTime() << "s" << std::endl;
     }
 }

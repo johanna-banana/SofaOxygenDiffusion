@@ -5,27 +5,31 @@
 #ifndef TESTSOFAEXECUTABLE_SOFAOXYGENDIFFUSION_H
 #define TESTSOFAEXECUTABLE_SOFAOXYGENDIFFUSION_H
 
+#ifdef MAKE_MEX_FILE
 #include "mex.h"
 #include "class_handle.hpp"
+#endif
 
 #include <sofa/simulation/Simulation.h>
-#include <SofaSimulationTree/GNode.h>
+#include <SofaSimulationGraph/SimpleApi.h>
+#include <SofaSimulationGraph/DAGNode.h>
+using DAGNode = sofa::simulation::graph::DAGNode;
 
 // The class that we are interfacing to
 class SofaOxygenDiffusion
 {
 public:
-    SofaOxygenDiffusion() { mexPrintf("Calling constructor\n"); }
-    ~SofaOxygenDiffusion() { mexPrintf("Calling destructor\n"); }
+    SofaOxygenDiffusion() {}
+    ~SofaOxygenDiffusion();
     void run_simulation();
     void init_simulation();
 private:
     sofa::simulation::Simulation::SPtr m_simulation;
-    sofa::simulation::tree::GNode::SPtr m_root_node;
+    sofa::simulation::Node::SPtr m_root_node;
 };
 
 
-
+#ifdef MAKE_MEX_FILE
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
     // Get the command string
@@ -83,17 +87,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     // Got here, so command not recognized
     mexErrMsgTxt("Command not recognized.");
 }
-
-
-
-
-
-
-
-
-
-
-
-
+#endif
 
 #endif //TESTSOFAEXECUTABLE_SOFAOXYGENDIFFUSION_H
