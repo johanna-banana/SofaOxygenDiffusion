@@ -15,3 +15,12 @@ The object can be created in matlab using either
 or
 
 `sofasim = mex_interface(@SofaOxygenDiffusion)` <- This option does not require the "str2fun.m" file as mentioned above.
+
+## Matlab testing
+These lines of code should run when in the folder where the .mexw64 file is (after compiling).
+
+```matlab
+diffusion_fem = mex_interface(@SofaOxygenDiffusion);
+diffusion_fem.init_simulation();
+diffusion_fem.run_simulation();
+```
