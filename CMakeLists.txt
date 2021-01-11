@@ -5,11 +5,33 @@ set(test_executable ${PROJECT_NAME}_test)
 add_executable(${test_executable} test.cpp ${CPP_FILE_NAME})
 target_compile_features(${test_executable} PRIVATE cxx_std_17)
 
-set(MAKE_MEX_FILE false)
+set(MAKE_MEX_FILE true)
+set(compile_with_gui false)
 
 set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/install)
+
+# Define needed core items
+set(sofa_core_items)
+list(APPEND sofa_core_items SofaFramework)
+list(APPEND sofa_core_items SofaBase)
+list(APPEND sofa_core_items SofaSimulation)
+list(APPEND sofa_core_items SofaCommon)
+list(APPEND sofa_core_items SofaGeneral)
+
+# Define needed plugins
+set(sofa_plugin_items)
+list(APPEND sofa_plugin_items SofaGraphComponent)
+list(APPEND sofa_plugin_items SofaBoundaryCondition)
+list(APPEND sofa_plugin_items SofaSimpleFem)
+list(APPEND sofa_plugin_items SofaGeneralLoader)
+list(APPEND sofa_plugin_items SofaImplicitOdeSolver)
+
+if(compile_with_gui)
+    list(APPEND sofa_core_items SofaGui)
+    list(APPEND sofa_plugin_items SofaOpenglVisual)
+endif()
+
 if (MAKE_MEX_FILE AND WIN32)
-    add_compile_definitions(MAKE_MEX_FILE)
     include(FindMatlab)
     SET( CMAKE_CXX_COMPILER mex )
     SET( CMAKE_C_COMPILER   mex )
@@ -20,6 +42,7 @@ if (MAKE_MEX_FILE AND WIN32)
     set_target_properties(${MATLAB_TARGET} PROPERTIES SUFFIX ".${TARGET_SUFFIX}")
     message(STATUS ${Matlab_ROOT_DIR})
     INCLUDE_DIRECTORIES("${Matlab_ROOT_DIR}/extern/include")
+    target_compile_definitions(${MATLAB_TARGET} PRIVATE MAKE_MEX_FILE)
 else()
     set(CMAKE_CXX_STANDARD ++17)
 endif ()
@@ -56,6 +79,10 @@ endif()
 set(SOFA_ROOT ${sofa_rooot})
 set(SOFA_DIR ${sofa_diiir})
 
+if(compile_with_gui)
+    add_compile_definitions(USE_GUI)
+endif()
+
 find_package(EIGEN3 REQUIRED)
 
 # Define some macros to make it easier to add each sofa item because it does weird things
@@ -90,18 +117,14 @@ macro(add_sofa_plugin target plugin)
     list(APPEND MY_DEPENDENCY_PATHS "${SOFA_ROOT}/plugins/${plugin}/bin")
 endmacro()
 
-# Add all the required sofa stuff
-add_sofa_core(${test_executable} SofaFramework)
-add_sofa_core(${test_executable} SofaBase)
-add_sofa_core(${test_executable} SofaSimulation)
-add_sofa_core(${test_executable} SofaCommon)
-add_sofa_core(${test_executable} SofaGeneral)
-add_sofa_plugin(${test_executable} SofaGraphComponent)
-add_sofa_plugin(${test_executable} SofaBoundaryCondition)
-add_sofa_plugin(${test_executable} SofaSimpleFem)
-add_sofa_plugin(${test_executable} SofaGeneralLoader)
-add_sofa_plugin(${test_executable} SofaImplicitOdeSolver)
 
+# Add all the required sofa stuff
+foreach(_core_item ${sofa_core_items})
+    add_sofa_core(${test_executable} ${_core_item})
+endforeach()
+foreach(_plugin_item ${sofa_plugin_items})
+    add_sofa_plugin(${test_executable} ${_plugin_item})
+endforeach()
 
 if (MAKE_MEX_FILE AND WIN32)
     find_package(Matlab REQUIRED COMPONENTS MX_LIBRARY ENG_LIBRARY MEX_COMPILER )
@@ -111,20 +134,13 @@ if (MAKE_MEX_FILE AND WIN32)
             MATLAB_MEX_FILE
             _CRT_SECURE_NO_WARNINGS)
 
-    add_sofa_core(${MATLAB_TARGET} SofaFramework)
-    add_sofa_core(${MATLAB_TARGET} SofaBase)
-    add_sofa_core(${MATLAB_TARGET} SofaSimulation)
-    add_sofa_core(${MATLAB_TARGET} SofaCommon)
-    add_sofa_core(${MATLAB_TARGET} SofaGeneral)
-    add_sofa_plugin(${MATLAB_TARGET} SofaGraphComponent)
-    add_sofa_plugin(${MATLAB_TARGET} SofaBoundaryCondition)
-    add_sofa_plugin(${MATLAB_TARGET} SofaSimpleFem)
-    add_sofa_plugin(${MATLAB_TARGET} SofaGeneralLoader)
-    add_sofa_plugin(${MATLAB_TARGET} SofaImplicitOdeSolver)
-
-#    foreach(_path ${MY_DEPENDENCY_PATHS})
-#        message(STATUS ${_path})
-#    endforeach()
+    # Add all the required sofa stuff
+    foreach(_core_item ${sofa_core_items})
+        add_sofa_core(${MATLAB_TARGET} ${_core_item})
+    endforeach()
+    foreach(_plugin_item ${sofa_plugin_items})
+        add_sofa_plugin(${MATLAB_TARGET} ${_plugin_item})
+    endforeach()
 
     # Transfer the value of ${MY_DEPENDENCY_PATHS} into the install script
     install(CODE "set(MY_DEPENDENCY_PATHS \"${MY_DEPENDENCY_PATHS}\")")

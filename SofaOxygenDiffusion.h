@@ -23,6 +23,10 @@ public:
     ~SofaOxygenDiffusion();
     void run_simulation();
     void init_simulation();
+
+#ifdef USE_GUI
+    void init_gui();
+#endif
 private:
     sofa::simulation::Simulation::SPtr m_simulation;
     sofa::simulation::Node::SPtr m_root_node;

@@ -1,6 +1,12 @@
 
 #include "SofaOxygenDiffusion.h"
 
+#ifdef USE_GUI
+#include <sofa/gui/GUIManager.h>
+#include <sofa/gui/Main.h>
+#endif
+
+
 #include <sofa/defaulttype/VecTypes.h>
 
 #include <SofaGeneralLoader/MeshGmshLoader.h>
@@ -52,11 +58,21 @@ using sofa::component::projectiveconstraintset::FixedConstraint;
 using Tag = sofa::core::objectmodel::Tag;
 using Data = sofa::core::objectmodel::Data<std::string>;
 
+#ifdef USE_GUI
+void SofaOxygenDiffusion::init_gui()
+{
+
+}
+#endif
+
+
 void SofaOxygenDiffusion::init_simulation()
 {
+#ifdef USE_GUI
+    init_gui();
+#endif
     sofa::component::initSofaBase();
     sofa::initSofaSimulation();
-//    sofa::simulation::graph::init();
 
     m_simulation = sofa::simpleapi::createSimulation();
     m_root_node = sofa::simpleapi::createRootNode(m_simulation, "root");
@@ -70,7 +86,6 @@ void SofaOxygenDiffusion::init_simulation()
     eulerSolver->f_rayleighStiffness.setValue(0.1);
     eulerSolver->f_rayleighMass.setValue(0.1);
     eulerSolver->f_firstOrder.setValue(true);
-   // <CGLinearSolver name="CG" iterations="1000" tolerance="1.0e-10" threshold="1.0e-30" tags="heat"/>
     CGLinearSolver::SPtr linearSolver = New<CGLinearSolver>();
     linearSolver->setName("linearSolver");
     linearSolver->f_maxIter.setValue(1000);
@@ -136,6 +151,13 @@ SofaOxygenDiffusion::~SofaOxygenDiffusion()
 
 void SofaOxygenDiffusion::run_simulation()
 {
+#ifdef USE_GUI
+    sofa::gui::initMain();
+    sofa::gui::GUIManager::Init("simple_scene", "qt");
+    sofa::gui::GUIManager::createGUI(m_root_node, "SofaOxygenDiffusion");
+    sofa::gui::GUIManager::MainLoop(m_root_node);
+
+#endif
     for(uint16_t i = 0; i<5;i++)
     {
         m_simulation->animate(m_root_node.get());
