@@ -21,7 +21,7 @@ using TetraGeoAlgorithm = sofa::component::topology::TetrahedronSetGeometryAlgor
 #include <SofaBaseMechanics/MechanicalObject.h>
 #include <SofaBoundaryCondition/ConstantForceField.h>
 #include <SofaBoundaryCondition/FixedConstraint.h>
-#include <SofaSimpleFem/TetrahedronDiffusionFEMForceField.h>
+#include "TetrahedronO2DiffusionFEMForceField.h"
 
 //solvers
 #include <SofaBaseLinearSolver/CGLinearSolver.h>
@@ -123,7 +123,7 @@ void SofaOxygenDiffusion::init_simulation()
     oxygen->addTag(Tag("oxygen"));
 
     // diffusion forcefield
-    typedef sofa::component::forcefield::TetrahedronDiffusionFEMForceField<sofa::defaulttype::Vec1dTypes> TetraDiffFEM;
+    typedef sofa::component::forcefield::TetrahedronO2DiffusionFEMForceField<sofa::defaulttype::Vec1dTypes> TetraDiffFEM;
     TetraDiffFEM::SPtr tetra_diffusion_fem = New<TetraDiffFEM>();
     tetra_diffusion_fem->setName("diffusion_fem");
     tetra_diffusion_fem->l_topology = topology;

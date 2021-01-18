@@ -1,13 +1,16 @@
 cmake_minimum_required(VERSION 3.17)
 project(SofaOxygenDiffusion)
-set(CPP_FILE_NAME SofaOxygenDiffusion.cpp SofaOxygenDiffusion.h)
+set(CPP_FILE_NAMES
+        SofaOxygenDiffusion.cpp SofaOxygenDiffusion.h
+        TetrahedronO2DiffusionFEMForceField.cpp TetrahedronO2DiffusionFEMForceField.h)
 set(test_executable ${PROJECT_NAME}_test)
-add_executable(${test_executable} test.cpp ${CPP_FILE_NAME})
+add_executable(${test_executable} test.cpp ${CPP_FILE_NAMES})
 target_compile_features(${test_executable} PRIVATE cxx_std_17)
 
 set(MAKE_MEX_FILE true)
 set(compile_with_gui false)
 
+include_directories(./)
 set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/install)
 
 # Define needed core items
@@ -31,12 +34,12 @@ if(compile_with_gui)
     list(APPEND sofa_plugin_items SofaOpenglVisual)
 endif()
 
-if (MAKE_MEX_FILE AND WIN32)
+if (MAKE_MEX_FILE)
     include(FindMatlab)
     SET( CMAKE_CXX_COMPILER mex )
     SET( CMAKE_C_COMPILER   mex )
     set(MATLAB_TARGET ${PROJECT_NAME})
-    matlab_add_mex(NAME ${MATLAB_TARGET} SRC ${CPP_FILE_NAME})
+    matlab_add_mex(NAME ${MATLAB_TARGET} SRC ${CPP_FILE_NAMES})
     target_compile_features(${MATLAB_TARGET} PRIVATE cxx_std_17)
     set(TARGET_SUFFIX mexw64)
     set_target_properties(${MATLAB_TARGET} PROPERTIES SUFFIX ".${TARGET_SUFFIX}")
@@ -126,7 +129,7 @@ foreach(_plugin_item ${sofa_plugin_items})
     add_sofa_plugin(${test_executable} ${_plugin_item})
 endforeach()
 
-if (MAKE_MEX_FILE AND WIN32)
+if (MAKE_MEX_FILE)
     find_package(Matlab REQUIRED COMPONENTS MX_LIBRARY ENG_LIBRARY MEX_COMPILER )
     target_link_libraries(${MATLAB_TARGET} ${MATLAB_LIBRARIES})
 
