@@ -7,8 +7,8 @@ set(test_executable ${PROJECT_NAME}_test)
 add_executable(${test_executable} test.cpp ${CPP_FILE_NAMES})
 target_compile_features(${test_executable} PRIVATE cxx_std_17)
 
-set(MAKE_MEX_FILE false)
-set(compile_with_gui false)
+set(MAKE_MEX_FILE false)  # set to true to compile Matlab interface
+set(compile_with_gui false)  # Not working yet. leave false.
 
 include_directories(./)
 set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/install)
