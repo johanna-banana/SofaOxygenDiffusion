@@ -2,12 +2,12 @@ cmake_minimum_required(VERSION 3.17)
 project(SofaOxygenDiffusion)
 set(CPP_FILE_NAMES
         SofaOxygenDiffusion.cpp SofaOxygenDiffusion.h
-        TetrahedronO2DiffusionFEMForceField.cpp TetrahedronO2DiffusionFEMForceField.h)
+        TetrahedronO2DiffusionFEMForceField.inl TetrahedronO2DiffusionFEMForceField.h)
 set(test_executable ${PROJECT_NAME}_test)
 add_executable(${test_executable} test.cpp ${CPP_FILE_NAMES})
 target_compile_features(${test_executable} PRIVATE cxx_std_17)
 
-set(MAKE_MEX_FILE true)
+set(MAKE_MEX_FILE false)
 set(compile_with_gui false)
 
 include_directories(./)

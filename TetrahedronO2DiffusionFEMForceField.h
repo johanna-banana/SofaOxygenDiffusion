@@ -14,12 +14,34 @@ class TetrahedronO2DiffusionFEMForceField : public TetrahedronDiffusionFEMForceF
 {
 public:
     /// Constructor
-    TetrahedronO2DiffusionFEMForceField(){}
+    TetrahedronO2DiffusionFEMForceField();
     /// Destructor
-    virtual ~TetrahedronO2DiffusionFEMForceField(){};
+    virtual ~TetrahedronO2DiffusionFEMForceField();
 
+    /// Vector of densities for each tetrahedron
+    Data<sofa::helper::vector<Real> > d_tetraNormoxicDensity;
+
+    /// Vector of densities for each tetrahedron
+    Data<sofa::helper::vector<Real> > d_tetraHypoxicDensity;
+
+    Data<Real> d_alphaN;
+
+    Data<Real> d_alphaH;
+
+    Data<Real> d_O2SaturationConstant;
+    Data<sofa::helper::vector<Real> > d_tetraUptakeCoefficient;
+
+
+protected:
+    /// Function computing the edge diffusion coefficient from tetrahedral information
+    void computeEdgeDiffusionCoefficient();
+    /// Forcefield functions for Matrix system. Adding force to global forcefield vector.
+    void addForce (const core::MechanicalParams* mparams /* PARAMS FIRST */, DataVecDeriv& dF, const DataVecCoord& dX, const DataVecDeriv& /*v*/);
+
+    sofa::helper::vector<Real> edgeUptakeCoefficient;
 
 };
 }  // namespace sofa::component::forcefield
 
+#include "TetrahedronO2DiffusionFEMForceField.inl"
 #endif //SOFAOXYGENDIFFUSION_TETRAHEDRONO2DIFFUSIONFEMFORCEFIELD_H
