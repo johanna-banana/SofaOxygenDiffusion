@@ -7,7 +7,7 @@ set(test_executable ${PROJECT_NAME}_test)
 add_executable(${test_executable} test.cpp ${CPP_FILE_NAMES})
 target_compile_features(${test_executable} PRIVATE cxx_std_17)
 
-set(MAKE_MEX_FILE false)  # set to true to compile Matlab interface
+set(MAKE_MEX_FILE true)  # set to true to compile Matlab interface
 set(compile_with_gui false)  # Not working yet. leave false.
 
 include_directories(./)
@@ -45,13 +45,17 @@ if (MAKE_MEX_FILE)
     set_target_properties(${MATLAB_TARGET} PROPERTIES SUFFIX ".${TARGET_SUFFIX}")
     message(STATUS ${Matlab_ROOT_DIR})
     INCLUDE_DIRECTORIES("${Matlab_ROOT_DIR}/extern/include")
-    target_compile_definitions(${MATLAB_TARGET} PRIVATE MAKE_MEX_FILE)
+    target_compile_definitions(${MATLAB_TARGET} PUBLIC MAKE_MEX_FILE)
 else()
     set(CMAKE_CXX_STANDARD ++17)
 endif ()
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 list(APPEND CMAKE_PREFIX_PATH "C:/sofa_libs/eigen-3.3.7")
+set(SOFA_ROOT $ENV{SOFA_ROOT})
+message("Using Sofa found at $ENV{SOFA_ROOT}")
+set(sofa_rooot "$ENV{SOFA_ROOT}")
+set(sofa_diiir "${SOFA_ROOT}/include")
 
 if (WIN32)
     list(APPEND CMAKE_PREFIX_PATH "C:/sofa_libs/eigen-3.3.7")
@@ -59,17 +63,10 @@ if (WIN32)
     set(BOOST_ROOT "C:/sofa_libs/boost_1_72_0")
     list(APPEND CMAKE_PREFIX_PATH "C:/sofa_libs/sofa")
     list(APPEND CMAKE_PREFIX_PATH "C:/sofa_libs/sofa/lib/win64")
-
-    set(sofa_rooot "C:/Users/Somers/git/sofa-latest/build/install")
-    set(sofa_diiir C:/Users/Somers/git/sofa-latest/build/install/include)
-
     find_package(Boost REQUIRED)
     message("Including Boost header directory:\t ${Boost_INCLUDE_DIRS}/boost_1_72_0" )
     include_directories("${Boost_INCLUDE_DIRS}/boost_1_72_0")
 else()
-    set(sofa_rooot ~git/sofa/build/install)
-    set(sofa_diiir ~/git/sofa/build/install/include)
-
     find_package(Boost REQUIRED)
     message("Including Boost header directory:\t ${Boost_INCLUDE_DIRS}/boost_1_72_0" )
     include_directories("${Boost_INCLUDE_DIRS}")

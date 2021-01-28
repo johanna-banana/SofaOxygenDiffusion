@@ -31,11 +31,11 @@ typedef BaseMeshTopology::EdgesInTetrahedron EdgesInTetrahedron;
 template<class DataTypes>
 TetrahedronO2DiffusionFEMForceField<DataTypes>::TetrahedronO2DiffusionFEMForceField()
         : TetrahedronDiffusionFEMForceField<DataTypes>::TetrahedronDiffusionFEMForceField(),  // initialize parent class
-          d_tetraNormoxicDensity(initData(&d_tetraNormoxicDensity, "tetraNormoxicDensity","Density of normoxic cells for each tetrahedron, by default equal to 0.")),
-          d_tetraHypoxicDensity(initData(&d_tetraHypoxicDensity, "tetraHypoxicDensity","Density of hypoxic cells for each tetrahedron, by default equal to 0.")),
-          d_alphaN(initData(&d_alphaN, "alphaN","Oxygen uptake coefficient for normoxic cells.")),
-          d_alphaH(initData(&d_alphaH, "alphaH","Oxygen uptake coefficient for hypoxic cells.")),
-          d_O2SaturationConstant(initData(&d_O2SaturationConstant, "O2SaturationConstant","Oxygen saturation constant for tissue, by default equal to 2.5 mmHg.")),
+          d_tetraNormoxicDensity(initData(&d_tetraNormoxicDensity,  "tetraNormoxicDensity","Density of normoxic cells for each tetrahedron, by default equal to 0.")),
+          d_tetraHypoxicDensity(initData(&d_tetraHypoxicDensity,  "tetraHypoxicDensity","Density of hypoxic cells for each tetrahedron, by default equal to 0.")),
+          d_alphaN(initData(&d_alphaN,  (Real)0.0, "alphaN","Oxygen uptake coefficient for normoxic cells.")),
+          d_alphaH(initData(&d_alphaH,  (Real)0.0, "alphaH","Oxygen uptake coefficient for hypoxic cells.")),
+          d_O2SaturationConstant(initData(&d_O2SaturationConstant, (Real)1.0, "O2SaturationConstant","Oxygen saturation constant for tissue, by default equal to 2.5 mmHg.")),
           d_tetraUptakeCoefficient(initData(&d_tetraUptakeCoefficient, "tetraUptakeCoefficient","Oxygen uptake coefficient for each tetra."))
 {
 }
